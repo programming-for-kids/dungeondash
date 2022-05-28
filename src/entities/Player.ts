@@ -24,6 +24,7 @@ export default class Player {
   public sprite: Phaser.Physics.Arcade.Sprite;
   private keys: Keys;
 
+  // 成员变量 - member variables
   private attackUntil: number;
   private staggerUntil: number;
   private attackLockedUntil: number;
@@ -36,15 +37,20 @@ export default class Player {
   private scene: Phaser.Scene;
   private facingUp: boolean;
 
+  // 构造函数 - 初始化 class 对象的时候调用
+  // new Player(10, 10, scene);
   constructor(x: number, y: number, scene: Phaser.Scene) {
     this.scene = scene;
+    // 精灵，也就是游戏中的角色
     this.sprite = scene.physics.add.sprite(x, y, Graphics.player.name, 0);
     this.sprite.setSize(8, 8);
     this.sprite.setOffset(20, 28);
     this.sprite.anims.play(Graphics.player.animations.idle.key);
     this.facingUp = false;
+    // 玩家深度是5，史莱姆深度是10，深度大的盖住深度小的
     this.sprite.setDepth(5);
 
+    // 添加按键控制
     this.keys = scene.input.keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.UP,
       down: Phaser.Input.Keyboard.KeyCodes.DOWN,
@@ -62,7 +68,10 @@ export default class Player {
     this.attacking = false;
     this.staggerUntil = 0;
     this.staggered = false;
+
     const particles = scene.add.particles(Graphics.player.name);
+
+    // 冲刺效果
     particles.setDepth(6);
     this.emitter = particles.createEmitter({
       alpha: { start: 0.7, end: 0, ease: "Cubic.easeOut" },
@@ -77,6 +86,7 @@ export default class Player {
     });
     this.emitter.stop();
 
+    // 被攻击效果
     this.flashEmitter = particles.createEmitter({
       alpha: { start: 0.5, end: 0, ease: "Cubic.easeOut" },
       follow: this.sprite,
@@ -102,6 +112,7 @@ export default class Player {
       this.staggered = true;
       // TODO
       this.scene.cameras.main.shake(150, 0.001);
+      // 50 ms (1s = 1,000 ms; 50ms = 0.05s)
       this.scene.cameras.main.flash(50, 100, 0, 0);
     }
   }
@@ -111,7 +122,9 @@ export default class Player {
     const keys = this.keys;
     let attackAnim = "";
     let moveAnim = "";
+    let defendAnim = "";
 
+    // 被攻击的摇晃的效果
     if (this.staggered && !this.body.touching.none) {
       this.staggerUntil = this.time + staggerDuration;
       this.staggered = false;
@@ -123,9 +136,11 @@ export default class Player {
         this.body.setVelocityY(staggerSpeed);
       } else if (this.body.touching.left) {
         this.body.setVelocityX(staggerSpeed);
+        // 设置角色的朝向是往右
         this.sprite.setFlipX(true);
       } else if (this.body.touching.right) {
         this.body.setVelocityX(-staggerSpeed);
+        // 设置角色的朝向是往左
         this.sprite.setFlipX(false);
       }
       this.sprite.anims.play(Graphics.player.animations.stagger.key);
@@ -140,22 +155,27 @@ export default class Player {
 
     this.body.setVelocity(0);
 
+    // 获取角色当前移动方向
     const left = keys.left.isDown || keys.a.isDown;
     const right = keys.right.isDown || keys.d.isDown;
     const up = keys.up.isDown || keys.w.isDown;
     const down = keys.down.isDown || keys.s.isDown;
 
     if (!this.body.blocked.left && left) {
+      // 往左移动
       this.body.setVelocityX(-speed);
       this.sprite.setFlipX(true);
     } else if (!this.body.blocked.right && right) {
+      // 往右移动
       this.body.setVelocityX(speed);
       this.sprite.setFlipX(false);
     }
 
     if (!this.body.blocked.up && up) {
+      // 往上移动
       this.body.setVelocityY(-speed);
     } else if (!this.body.blocked.down && down) {
+      // 往下移动
       this.body.setVelocityY(speed);
     }
 
@@ -173,10 +193,13 @@ export default class Player {
       this.facingUp = true;
     } else if (this.facingUp) {
       moveAnim = Graphics.player.animations.idleBack.key;
+      defendAnim = Graphics.player.animations.defend.key;
     } else {
       moveAnim = Graphics.player.animations.idle.key;
+      defendAnim = Graphics.player.animations.defend.key;
     }
 
+    // 攻击效果
     if (
       keys.space!.isDown &&
       time > this.attackLockedUntil &&
@@ -184,14 +207,27 @@ export default class Player {
     ) {
       this.attackUntil = time + attackDuration;
       this.attackLockedUntil = time + attackDuration + attackCooldown;
+      // 提高攻击时的移动速度
       this.body.velocity.normalize().scale(attackSpeed);
       this.sprite.anims.play(attackAnim, true);
       this.emitter.start();
+      // TODO: setBlendMode 的混色模式需要进一步研究
       this.sprite.setBlendMode(Phaser.BlendModes.ADD);
       this.attacking = true;
       return;
     }
 
+    // 防御效果
+    if (
+      keys.space!.isDown &&
+      this.body.velocity.length() === 0
+    ) {
+      // 播放防御动画
+      this.sprite.anims.play(defendAnim, true);
+      return;
+    }
+
+    // 播放移动或静止的动画
     this.attacking = false;
     this.sprite.anims.play(moveAnim, true);
     this.body.velocity.normalize().scale(speed);

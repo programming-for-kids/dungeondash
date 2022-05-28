@@ -42,10 +42,10 @@ const environment = {
   file: RogueEnvironment,
   indices: {
     floor: {
-      outer: [0x05, 0x05, 0x05, 0x15, 0x07, 0x17],
-      outerCorridor: [0x0d, 0x0d, 0x0d, 0x1d, 0x0f, 0x1f]
+      outer: [0x05, 0x05, 0x05, 0x15, 0x07, 0x17], // blue
+      outerCorridor: [0x0d, 0x0d, 0x0d, 0x1d, 0x0f, 0x1f] // grey
     },
-    block: 0x17,
+    block: 0x17, // 块，没懂 [TODO]
     doors: {
       horizontal: 0x81,
       vertical: 0x92,
@@ -126,6 +126,11 @@ const player: AnimSet = {
     stagger: {
       key: "playerStagger",
       frames: { frames: [0x38, 0x38, 0x39, 0x3a] },
+      frameRate: 30
+    },
+    defend: {
+      key: "playerDefend",
+      frames: { frames: [0x43, 0x44, 0x4b, 0x4c] },
       frameRate: 30
     }
   }

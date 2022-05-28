@@ -29,7 +29,7 @@ function updateTileAlpha(
   }
 }
 
-export default class FOVLayer {
+export default class FOVLayer {  // FOV = field of view
   public layer: Phaser.Tilemaps.DynamicTilemapLayer;
   private mrpas: Mrpas | undefined;
   private lastPos: Phaser.Math.Vector2;

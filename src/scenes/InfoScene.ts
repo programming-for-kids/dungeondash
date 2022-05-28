@@ -22,7 +22,7 @@ export default class InfoScene extends Phaser.Scene {
   update(time: number, _: number): void {
     if (time > this.lastUpdate! + 100) {
       this.text!.setText([
-        "Dungeon Dash!",
+        "Welcome to Dungeon Dash!",
         "",
         "Use arrow keys to walk around the map!",
         "Press space while moving to dash-attack!",

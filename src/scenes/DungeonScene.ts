@@ -9,16 +9,16 @@ const worldTileHeight = 81;
 const worldTileWidth = 81;
 
 export default class DungeonScene extends Phaser.Scene {
-  lastX: number;
+  lastX: number; // name: type
   lastY: number;
   player: Player | null;
   slimes: Slime[];
   slimeGroup: Phaser.GameObjects.Group | null;
-  fov: FOVLayer | null;
-  tilemap: Phaser.Tilemaps.Tilemap | null;
+  fov: FOVLayer | null; // field of view 视野
+  tilemap: Phaser.Tilemaps.Tilemap | null; // 格子的地图
   roomDebugGraphics?: Phaser.GameObjects.Graphics;
 
-  preload(): void {
+  preload(): void { // 预加载
     this.load.image(Graphics.environment.name, Graphics.environment.file);
     this.load.image(Graphics.util.name, Graphics.util.file);
     this.load.spritesheet(Graphics.player.name, Graphics.player.file, {
@@ -31,14 +31,14 @@ export default class DungeonScene extends Phaser.Scene {
     });
   }
 
-  constructor() {
+  constructor() { // 构造函数
     super("DungeonScene");
     this.lastX = -1;
     this.lastY = -1;
     this.player = null;
     this.fov = null;
     this.tilemap = null;
-    this.slimes = [];
+    this.slimes = []; // array 空数组
     this.slimeGroup = null;
   }
 
@@ -62,11 +62,14 @@ export default class DungeonScene extends Phaser.Scene {
     }
   }
 
-  create(): void {
+  create(): void { // 创建场景
+    // 创建信息窗口
     this.events.on("wake", () => {
       this.scene.run("InfoScene");
     });
+    this.scene.run("InfoScene");
 
+    // 创建玩家的动画
     Object.values(Graphics.player.animations).forEach(anim => {
       if (!this.anims.get(anim.key)) {
         this.anims.create({
@@ -79,7 +82,7 @@ export default class DungeonScene extends Phaser.Scene {
       }
     });
 
-    // TODO
+    // 创建史莱姆的动画
     Object.values(Graphics.slime.animations).forEach(anim => {
       if (!this.anims.get(anim.key)) {
         this.anims.create({
@@ -92,33 +95,40 @@ export default class DungeonScene extends Phaser.Scene {
       }
     });
 
+    // 创建地图
     const map = new Map(worldTileWidth, worldTileHeight, this);
     this.tilemap = map.tilemap;
 
+    // 创建视野
     this.fov = new FOVLayer(map);
 
+    // 创建玩家的对象
     this.player = new Player(
       this.tilemap.tileToWorldX(map.startingX),
       this.tilemap.tileToWorldY(map.startingY),
       this
     );
 
+    // 创建史莱姆们
     this.slimes = map.slimes;
     this.slimeGroup = this.physics.add.group(this.slimes.map(s => s.sprite));
 
+    // 设置摄像头 / 视角
     this.cameras.main.setRoundPixels(true);
-    this.cameras.main.setZoom(3);
+    this.cameras.main.setZoom(2.5);
     this.cameras.main.setBounds(
       0,
       0,
-      map.width * Graphics.environment.width,
-      map.height * Graphics.environment.height
+      map.width * Graphics.environment.width,   // 地图的宽度（单位：像素）
+      map.height * Graphics.environment.height  // 地图的高度（单位：像素）
     );
     this.cameras.main.startFollow(this.player.sprite);
 
+    // 设置和墙的碰撞效果
     this.physics.add.collider(this.player.sprite, map.wallLayer);
     this.physics.add.collider(this.slimeGroup, map.wallLayer);
 
+    // 设置和门的碰撞效果
     this.physics.add.collider(this.player.sprite, map.doorLayer);
     this.physics.add.collider(this.slimeGroup, map.doorLayer);
 
@@ -129,6 +139,7 @@ export default class DungeonScene extends Phaser.Scene {
     //   undefined,
     //   this
     // );
+    // 设置玩家和史莱姆的碰撞效果
     this.physics.add.collider(
       this.player.sprite,
       this.slimeGroup,
@@ -141,14 +152,16 @@ export default class DungeonScene extends Phaser.Scene {
     //   this.physics.add.collider(slime.sprite, map.wallLayer);
     // }
 
+    // 按下 R键 时的效果，显示游戏资源
     this.input.keyboard.on("keydown_R", () => {
       this.scene.stop("InfoScene");
       this.scene.run("ReferenceScene");
       this.scene.sleep();
     });
 
+    // 按下 Q键 时的效果，Debug
     this.input.keyboard.on("keydown_Q", () => {
-      this.physics.world.drawDebug = !this.physics.world.drawDebug;
+      this.physics.world.drawDebug = !this.physics.world.drawDebug;  // 设置 debug 开关
       if (!this.physics.world.debugGraphic) {
         this.physics.world.createDebugGraphic();
       }
@@ -156,10 +169,12 @@ export default class DungeonScene extends Phaser.Scene {
       this.roomDebugGraphics!.setVisible(this.physics.world.drawDebug);
     });
 
+    // 按下 F键 时的效果，切换视野
     this.input.keyboard.on("keydown_F", () => {
       this.fov!.layer.setVisible(!this.fov!.layer.visible);
     });
 
+    // Room Debug 时的效果
     this.roomDebugGraphics = this.add.graphics({ x: 0, y: 0 });
     this.roomDebugGraphics.setVisible(false);
     this.roomDebugGraphics.lineStyle(2, 0xff5500, 0.5);
@@ -171,31 +186,29 @@ export default class DungeonScene extends Phaser.Scene {
         this.tilemap!.tileToWorldY(room.height)
       );
     }
-
-    this.scene.run("InfoScene");
   }
 
-  update(time: number, delta: number) {
+  update(time: number, delta: number) { // 更新场景
+    // 刷新玩家
     this.player!.update(time);
 
-    const camera = this.cameras.main;
-
+    // 刷新史莱姆
     for (let slime of this.slimes) {
       slime.update(time);
     }
 
+    // 刷新视野
     const player = new Phaser.Math.Vector2({
       x: this.tilemap!.worldToTileX(this.player!.sprite.body.x),
       y: this.tilemap!.worldToTileY(this.player!.sprite.body.y)
     });
-
+    const camera = this.cameras.main;
     const bounds = new Phaser.Geom.Rectangle(
       this.tilemap!.worldToTileX(camera.worldView.x) - 1,
       this.tilemap!.worldToTileY(camera.worldView.y) - 1,
       this.tilemap!.worldToTileX(camera.worldView.width) + 2,
       this.tilemap!.worldToTileX(camera.worldView.height) + 2
     );
-
     this.fov!.update(player, bounds, delta);
   }
 }
