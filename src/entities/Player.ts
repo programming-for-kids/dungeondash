@@ -32,6 +32,7 @@ export default class Player {
   private flashEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   private body: Phaser.Physics.Arcade.Body;
   private attacking: boolean;
+  private defending: boolean;
   private time: number;
   private staggered: boolean;
   private scene: Phaser.Scene;
@@ -66,6 +67,7 @@ export default class Player {
     this.attackUntil = 0;
     this.attackLockedUntil = 0;
     this.attacking = false;
+    this.defending = false;
     this.staggerUntil = 0;
     this.staggered = false;
 
@@ -108,7 +110,8 @@ export default class Player {
   }
 
   stagger(): void {
-    if (this.time > this.staggerUntil) {
+    // 如果正在防御，史莱姆攻击无效
+    if (this.time > this.staggerUntil && !this.defending) {
       this.staggered = true;
       // TODO
       this.scene.cameras.main.shake(150, 0.001);
@@ -125,7 +128,7 @@ export default class Player {
     let defendAnim = "";
 
     // 被攻击的摇晃的效果
-    if (this.staggered && !this.body.touching.none) {
+    if (this.staggered && !this.body.touching.none && !this.defending) {
       this.staggerUntil = this.time + staggerDuration;
       this.staggered = false;
 
@@ -224,11 +227,13 @@ export default class Player {
     ) {
       // 播放防御动画
       this.sprite.anims.play(defendAnim, true);
+      this.defending = true;
       return;
     }
 
     // 播放移动或静止的动画
     this.attacking = false;
+    this.defending = false;
     this.sprite.anims.play(moveAnim, true);
     this.body.velocity.normalize().scale(speed);
     this.sprite.setBlendMode(Phaser.BlendModes.NORMAL);
